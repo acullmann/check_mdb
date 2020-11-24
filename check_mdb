@@ -1,0 +1,141 @@
+#!/bin/bash
+#
+# Nagios plugin to check slapd schema
+# 
+# Author : Benjamin Renard <brenard@easter-eggs.com>
+# Date : Wed, 12 Jun 2019 13:15:33 +0200
+# Source : http://gogs.zionetrix.net/check_slapd_schema
+#
+
+SUDO_USER=""
+MDB_STAT=mdb_stat
+DB_PATH="/var/lib/ldap"
+USED_PAGES_PERC_WARNING_LIMIT=70
+USED_PAGES_PERC_CRITICAL_LIMIT=90
+DEBUG=0
+
+function debug() {
+	if [ $DEBUG -eq 1 ]
+	then
+		>&2 echo -e "[DEBUG] $1"
+	fi
+}
+
+function format_size() {
+        SIZE=$1
+        UNIT="b"
+        if [ -z "$SIZE" -o "$SIZE" == "0" ]
+        then
+                SIZE="0"
+                UNIT=""
+        elif [ $SIZE -ge 1073741824 ]
+        then
+                SIZE=$( echo "scale=1; $SIZE/1073741824"|bc )
+                UNIT="Gb"
+
+        elif [ $SIZE -ge 1048576 ]
+        then
+                SIZE=$( echo "scale=1; $SIZE/1048576"|bc )
+                UNIT="Mb"
+        elif [ $SIZE -ge 1024 ]
+        then
+                SIZE=$( echo "scale=1; $SIZE/1024"|bc )
+                UNIT="Kb"
+        fi
+        echo "${SIZE}${UNIT}"
+}
+
+function usage() {
+	cat << EOF
+Usage : $0 [-d] [-h] [-w warning] [-c critical] [options]
+	-u			Sudo as specified user to run mdb_stat
+	-s			Path to mdb_stat (Default : auto-detected)
+	-p			Database path (Default : $DB_PATH)
+	-w			Used pages percentage warning limit (Default: $USED_PAGES_PERC_WARNING_LIMIT)
+	-c			Used pages percentage critical limit (Default: $USED_PAGES_PERC_CRITICAL_LIMIT)
+	-d			Debug mode
+	-h 			Show this message
+EOF
+}
+
+while getopts "hu:s:p:d" OPTION
+do
+	case $OPTION in
+		u)
+			SUDO_USER=$OPTARG
+		;;
+		s)
+			MDB_STAT=$OPTARG
+		;;
+		p)
+			DB_PATH=$OPTARG
+		;;
+		w)
+			USED_PAGES_PERC_WARNING_LIMIT=$OPTARG
+		;;
+		c)
+			USED_PAGES_PERC_CRITICAL_LIMIT=$OPTARG
+		;;
+		d)
+			DEBUG=1
+		;;
+		h)
+			usage
+			exit 0
+		;;
+		*)
+			echo "Unkown option '$OPTION'"
+			usage
+			exit 1
+	esac
+done
+
+CMD="$MDB_STAT -e $DB_PATH"
+debug "mdb_stat command = '$CMD'"
+
+if [ -n "$SUDO_USER" ]
+then
+	debug "run slapdschema command as $SUDO_USER"
+	OUTPUT=$( sudo -u $SUDO_USER $CMD 2>&1 )
+	EXITCODE=$?
+else
+	OUTPUT=$( $CMD 2>&1 )
+	EXITCODE=$?
+fi
+debug "Output :\n$OUTPUT"
+debug "Exit code : $EXITCODE"
+
+if [ $EXITCODE -ne 0 -o -z "$OUTPUT" ]
+then
+	echo "UNKNOWN - mdb_stat exit with $EXITCODE"
+	exit 3
+fi
+
+max_pages=$( echo -e "$OUTPUT"|grep -E '^ +Max pages: '|sed 's/^ \+Max pages: \([0-9]\+\)$/\1/' )
+used_pages=$( echo -e "$OUTPUT"|grep -E '^ +Number of pages used: '|sed 's/^ \+Number of pages used: \([0-9]\+\)$/\1/' )
+let perc_used=$used_pages*100/$max_pages
+debug "Used/max pages: $used_pages / $max_pages ($perc_used%)"
+
+page_size=$( echo -e "$OUTPUT"|grep -E '^ +Page size:'|sed 's/^ \+Page size: \([0-9]\+\)$/\1/' )
+debug "Page size: $page_size"
+
+let max_size=$max_pages*$page_size
+let used_size=$used_pages*$page_size
+debug "Used/max sizes: $used_size/$max_size"
+
+
+if [ $perc_used -gt $USED_PAGES_PERC_CRITICAL_LIMIT ]
+then
+	STATE=CRITICAL
+	EXITCODE=2
+elif [ $perc_used -gt $USED_PAGES_PERC_WARNING_LIMIT ]
+then
+	STATE=WARNING
+	EXITCODE=1
+else
+	STATE=OK
+	EXITCODE=0
+fi
+
+echo "$STATE - $perc_used% pages used ($used_pages pages on $max_pages / $( format_size $used_size) on $( format_size $max_size ))"
+exit $EXITCODE
