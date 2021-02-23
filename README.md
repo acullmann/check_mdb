@@ -3,7 +3,20 @@ Icinga/Nagios plugin to check MDB database
 
 This script could be used as Icinga/Nagios check plugin to check MDB database.
 
-This script use _mdb_stat_ utility to do this check.
+This script use *mdbstat* utility to do this check.
+
+Installation
+------------
+
+```
+apt install lmdb-utils
+git clone https://gogs.zionetrix.net/bn8/check_mdb.git /usr/local/src/check_mdb
+mkdir -p /usr/local/lib/nagios/plugins
+ln -s /usr/local/src/check_mdb/check_mdb /usr/local/lib/nagios/plugins/
+echo "command[check_mdb]=/usr/local/lib/nagios/plugins/check_md" > /etc/nagios/nrpe.d/ldap-mdb.cfg
+service nagios-nrpe-server reload
+```
+
 
 Usage
 -----
