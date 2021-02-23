@@ -13,7 +13,7 @@ apt install lmdb-utils
 git clone https://gogs.zionetrix.net/bn8/check_mdb.git /usr/local/src/check_mdb
 mkdir -p /usr/local/lib/nagios/plugins
 ln -s /usr/local/src/check_mdb/check_mdb /usr/local/lib/nagios/plugins/
-echo "command[check_mdb]=/usr/local/lib/nagios/plugins/check_md" > /etc/nagios/nrpe.d/ldap-mdb.cfg
+echo "command[check_mdb]=/usr/local/lib/nagios/plugins/check_mdb" > /etc/nagios/nrpe.d/ldap-mdb.cfg
 service nagios-nrpe-server reload
 ```
 
