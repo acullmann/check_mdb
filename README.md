@@ -3,13 +3,15 @@ Icinga/Nagios plugin to check MDB database
 
 This script could be used as Icinga/Nagios check plugin to check MDB database.
 
-This script use *mdbstat* utility to do this check.
+This script use *mdb_stat* utility to do this check.
+
+**Note :** *mdb_stat* is not available on Debian Wheezy but it could be backport from Jessie.
 
 Installation
 ------------
 
 ```
-apt install lmdb-utils
+apt-get install lmdb-utils
 git clone https://gogs.zionetrix.net/bn8/check_mdb.git /usr/local/src/check_mdb
 mkdir -p /usr/local/lib/nagios/plugins
 ln -s /usr/local/src/check_mdb/check_mdb /usr/local/lib/nagios/plugins/
