@@ -11,7 +11,7 @@ Installation
 ------------
 
 ```
-apt-get install lmdb-utils
+apt-get install lmdb-utils bc
 git clone https://gogs.zionetrix.net/bn8/check_mdb.git /usr/local/src/check_mdb
 mkdir -p /usr/local/lib/nagios/plugins
 ln -s /usr/local/src/check_mdb/check_mdb /usr/local/lib/nagios/plugins/
