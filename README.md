@@ -30,6 +30,7 @@ Usage : check_mdb [-d] [-h] [-w warning] [-c critical] [options]
 	-u			Sudo as specified user to run mdb_stat
 	-s			Path to mdb_stat (Default : auto-detected)
 	-p			Database path (Default : /var/lib/ldap)
+	-e			add Performance Data
 	-w			Used pages percentage warning limit (Default: 70)
 	-c			Used pages percentage critical limit (Default: 90)
 	-d			Debug mode
