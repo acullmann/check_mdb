@@ -13,6 +13,7 @@ DB_PATH="/var/lib/ldap"
 USED_PAGES_PERC_WARNING_LIMIT=70
 USED_PAGES_PERC_CRITICAL_LIMIT=90
 DEBUG=0
+PERF_DATA=0
 
 function debug() {
 	if [ $DEBUG -eq 1 ]
@@ -51,6 +52,7 @@ Usage : $0 [-d] [-h] [-w warning] [-c critical] [options]
 	-u			Sudo as specified user to run mdb_stat
 	-s			Path to mdb_stat (Default : auto-detected)
 	-p			Database path (Default : $DB_PATH)
+	-e			add Performance Data
 	-w			Used pages percentage warning limit (Default: $USED_PAGES_PERC_WARNING_LIMIT)
 	-c			Used pages percentage critical limit (Default: $USED_PAGES_PERC_CRITICAL_LIMIT)
 	-d			Debug mode
@@ -58,7 +60,7 @@ Usage : $0 [-d] [-h] [-w warning] [-c critical] [options]
 EOF
 }
 
-while getopts "hu:s:p:d" OPTION
+while getopts "hu:s:p:d:e" OPTION
 do
 	case $OPTION in
 		u)
@@ -69,6 +71,9 @@ do
 		;;
 		p)
 			DB_PATH=$OPTARG
+		;;
+		e)
+			PERF_DATA=1
 		;;
 		w)
 			USED_PAGES_PERC_WARNING_LIMIT=$OPTARG
@@ -137,5 +142,14 @@ else
 	EXITCODE=0
 fi
 
-echo "$STATE - $perc_used% pages used ($used_pages pages on $max_pages / $( format_size $used_size) on $( format_size $max_size ))"
+echo -n "$STATE - $perc_used% pages used ($used_pages pages on $max_pages / $( format_size $used_size) on $( format_size $max_size ))"
+
+if [ $PERF_DATA -eq 1 ]
+then
+	echo "|pages_used=$perc_used%;$USED_PAGES_PERC_WARNING_LIMIT;$USED_PAGES_PERC_CRITICAL_LIMIT"
+else
+	echo ""
+fi
+
+
 exit $EXITCODE
